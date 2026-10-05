@@ -1,0 +1,21 @@
+{
+  "name": "football-guess-game",
+  "version": "0.1.0",
+  "description": "Pass-and-play football trivia game: pick teams, guess a player who links them, score by overlap.",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "seed:sample": "node src/seed/seed.js --source=sample",
+    "lint": "eslint src --ext .js"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "eslint": "^8.57.0"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.3.0"
+  }
+}

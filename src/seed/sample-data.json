@@ -1,0 +1,28 @@
+{
+  "teams": [
+    { "name": "Manchester United", "country": "England" },
+    { "name": "Real Madrid", "country": "Spain" },
+    { "name": "Juventus", "country": "Italy" },
+    { "name": "Paris Saint-Germain", "country": "France" },
+    { "name": "AC Milan", "country": "Italy" },
+    { "name": "Chelsea", "country": "England" }
+  ],
+  "players": [
+    {
+      "name": "Cristiano Ronaldo",
+      "teams": ["Manchester United", "Real Madrid", "Juventus"]
+    },
+    {
+      "name": "Zlatan Ibrahimovic",
+      "teams": ["Juventus", "AC Milan", "Paris Saint-Germain"]
+    },
+    {
+      "name": "Angel Di Maria",
+      "teams": ["Real Madrid", "Manchester United", "Paris Saint-Germain"]
+    },
+    {
+      "name": "Andrea Pirlo",
+      "teams": ["AC Milan", "Juventus"]
+    }
+  ]
+}

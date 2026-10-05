@@ -21,10 +21,6 @@ const SAMPLE_DATA_PATH = path.join(__dirname, 'sample-data.json');
 // API-Football free tier: 10 requests/minute. Stay comfortably under that.
 const API_MIN_INTERVAL_MS = 7000; // ~8.5 req/min
 
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 function openDb() {
   fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
   const db = new Database(DB_PATH);

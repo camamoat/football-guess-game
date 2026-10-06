@@ -10,6 +10,13 @@
   },
   "overrides": [
     {
+      "files": ["src/web/**/*.js"],
+      "env": {
+        "node": false,
+        "browser": true
+      }
+    },
+    {
       "files": ["**/*.test.js"],
       "env": {
         "jest": true

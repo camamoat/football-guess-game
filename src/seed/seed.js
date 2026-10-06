@@ -2,13 +2,16 @@
 /**
  * Seeds the local SQLite DB with teams, players, and player-team history.
  *
- * Two sources:
+ * Sources:
+ *   --source=wikidata Loads the committed wikidata-data.json snapshot (no network).
+ *                      Refresh the snapshot with `npm run import:wikidata`.
  *   --source=sample   Uses the bundled sample-data.json (no network, no API key).
  *   --source=api      Pulls from API-Football. Requires API_FOOTBALL_KEY env var.
  *                      Respects the free tier's 10 requests/minute limit.
  *
- * The game itself never calls the API directly - it only ever reads from
- * this local DB - so this script is the one place API rate limits matter.
+ * File-based sources replace the existing teams and players, so switching
+ * between datasets never mixes them. The game itself never calls an external
+ * API - it only ever reads from this local DB.
  */
 const path = require('path');
 const fs = require('fs');
@@ -17,6 +20,7 @@ const Database = require('better-sqlite3');
 const DB_PATH = path.join(__dirname, '..', '..', 'data', 'game.db');
 const SCHEMA_PATH = path.join(__dirname, '..', 'db', 'schema.sql');
 const SAMPLE_DATA_PATH = path.join(__dirname, 'sample-data.json');
+const WIKIDATA_DATA_PATH = path.join(__dirname, 'wikidata-data.json');
 
 // API-Football free tier: 10 requests/minute. Stay comfortably under that.
 const API_MIN_INTERVAL_MS = 7000; // ~8.5 req/min
@@ -55,9 +59,14 @@ function linkPlayerToTeam(db, playerId, teamId) {
   ).run(playerId, teamId);
 }
 
-function seedFromSample(db) {
-  const data = JSON.parse(fs.readFileSync(SAMPLE_DATA_PATH, 'utf8'));
+function readDataset(filePath) {
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`Dataset not found: ${filePath}. Run \`npm run import:wikidata\` first.`);
+  }
+  return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+}
 
+function seedDataset(db, data, label = 'dataset') {
   const teamIdByName = {};
   for (const team of data.teams) {
     teamIdByName[team.name] = upsertTeam(db, team.name, team.country);
@@ -69,16 +78,36 @@ function seedFromSample(db) {
       const teamId = teamIdByName[teamName];
       if (!teamId) {
         throw new Error(
-          `Sample data error: player "${player.name}" references unknown team "${teamName}"`
+          `Data error: player "${player.name}" references unknown team "${teamName}"`
         );
       }
       linkPlayerToTeam(db, playerId, teamId);
     }
   }
 
-  console.log(
-    `Seeded ${data.teams.length} teams and ${data.players.length} players from sample data.`
-  );
+  console.log(`Seeded ${data.teams.length} teams and ${data.players.length} players from ${label}.`);
+}
+
+function seedFromSample(db) {
+  seedDataset(db, readDataset(SAMPLE_DATA_PATH), 'sample data');
+}
+
+/** Clears all game data and loads `data` in one transaction, so a failed load changes nothing. */
+function replaceDataset(db, data, label) {
+  db.transaction(() => {
+    db.exec('DELETE FROM player_teams; DELETE FROM players; DELETE FROM teams;');
+    seedDataset(db, data, label);
+  })();
+}
+
+const FILE_SOURCES = {
+  sample: [SAMPLE_DATA_PATH, 'sample data'],
+  wikidata: [WIKIDATA_DATA_PATH, 'the Wikidata snapshot'],
+};
+
+/** Loads the Wikidata snapshot when it exists, otherwise the sample data. */
+function defaultSource() {
+  return fs.existsSync(WIKIDATA_DATA_PATH) ? 'wikidata' : 'sample';
 }
 
 /**
@@ -109,16 +138,18 @@ async function seedFromApi() {
 
 async function main() {
   const sourceArg = process.argv.find((arg) => arg.startsWith('--source='));
-  const source = sourceArg ? sourceArg.split('=')[1] : 'sample';
+  const source = sourceArg ? sourceArg.split('=')[1] : defaultSource();
+  if (source !== 'api' && !Object.hasOwn(FILE_SOURCES, source)) {
+    throw new Error(`Unknown --source "${source}". Use "wikidata", "sample", or "api".`);
+  }
 
   const db = openDb();
   try {
-    if (source === 'sample') {
-      seedFromSample(db);
-    } else if (source === 'api') {
+    if (source === 'api') {
       await seedFromApi(db);
     } else {
-      throw new Error(`Unknown --source "${source}". Use "sample" or "api".`);
+      const [filePath, label] = FILE_SOURCES[source];
+      replaceDataset(db, readDataset(filePath), label);
     }
   } finally {
     db.close();
@@ -132,4 +163,15 @@ if (require.main === module) {
   });
 }
 
-module.exports = { openDb, upsertTeam, upsertPlayer, linkPlayerToTeam, seedFromSample };
+module.exports = {
+  openDb,
+  upsertTeam,
+  upsertPlayer,
+  linkPlayerToTeam,
+  seedFromSample,
+  seedDataset,
+  replaceDataset,
+  readDataset,
+  defaultSource,
+  FILE_SOURCES,
+};

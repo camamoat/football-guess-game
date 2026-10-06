@@ -1,7 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 const Database = require('better-sqlite3');
-const { seedFromSample, upsertTeam, upsertPlayer, linkPlayerToTeam } = require('./seed');
+const {
+  seedFromSample, upsertTeam, upsertPlayer, linkPlayerToTeam, replaceDataset, readDataset, FILE_SOURCES,
+} = require('./seed');
 
 const SCHEMA_PATH = path.join(__dirname, '..', 'db', 'schema.sql');
 
@@ -106,5 +108,50 @@ describe('upsertPlayer + linkPlayerToTeam', () => {
       .prepare('SELECT COUNT(*) AS c FROM player_teams WHERE player_id = ? AND team_id = ?')
       .get(playerId, teamId).c;
     expect(count).toBe(1);
+  });
+});
+
+describe('replaceDataset', () => {
+  let db;
+  beforeEach(() => {
+    db = makeInMemoryDb();
+  });
+  afterEach(() => {
+    db.close();
+  });
+
+  const count = (table) => db.prepare(`SELECT COUNT(*) AS c FROM ${table}`).get().c;
+
+  test('replaces existing data instead of merging it', () => {
+    seedFromSample(db);
+    replaceDataset(db, {
+      teams: [{ name: 'Ajax', country: 'Netherlands' }, { name: 'Barcelona', country: 'Spain' }],
+      players: [{ name: 'Johan Cruyff', teams: ['Ajax', 'Barcelona'] }],
+    }, 'test data');
+    expect(count('teams')).toBe(2);
+    expect(count('players')).toBe(1);
+    expect(count('player_teams')).toBe(2);
+  });
+
+  test('leaves the existing data untouched when the new dataset is invalid', () => {
+    seedFromSample(db);
+    const before = [count('teams'), count('players'), count('player_teams')];
+    expect(() => replaceDataset(db, {
+      teams: [{ name: 'Ajax', country: 'Netherlands' }],
+      players: [{ name: 'Johan Cruyff', teams: ['Barcelona'] }],
+    }, 'bad data')).toThrow('unknown team "Barcelona"');
+    expect([count('teams'), count('players'), count('player_teams')]).toEqual(before);
+  });
+
+  test('loads the committed Wikidata snapshot', () => {
+    const [filePath] = FILE_SOURCES.wikidata;
+    const snapshot = readDataset(filePath);
+    replaceDataset(db, snapshot, 'the Wikidata snapshot');
+    expect(count('teams')).toBe(snapshot.teams.length);
+    expect(count('players')).toBe(snapshot.players.length);
+  });
+
+  test('explains how to create a missing dataset', () => {
+    expect(() => readDataset('/nonexistent/data.json')).toThrow('npm run import:wikidata');
   });
 });

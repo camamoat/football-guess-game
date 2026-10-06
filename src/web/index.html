@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#13241e">
+    <title>Club Connections | Football Guess Game</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="/styles.css">
+    <script defer src="/match.js"></script>
+    <script defer src="/app.js"></script>
+  </head>
+  <body>
+    <header class="masthead">
+      <a class="brand" href="/" aria-label="Club Connections home">
+        <span class="brand-mark" aria-hidden="true">CC</span>
+        <span>CLUB CONNECTIONS</span>
+      </a>
+      <span class="mode-label">LOCAL MATCH / 2 PLAYERS</span>
+    </header>
+    <main>
+      <section class="intro">
+        <p class="eyebrow">THE BEAUTIFUL GAME. THE UNEXPECTED LINKS.</p>
+        <h1>Know the clubs.<br><span>Name the connection.</span></h1>
+        <p class="intro-copy">One footballer. Several clubs. How many can you connect?<br>
+          Take turns, trust your football knowledge, and chase the perfect guess.</p>
+      </section>
+      <div id="error" class="error" role="alert" hidden></div>
+      <p id="loading" class="loading" role="status">Warming up the squad…</p>
+      <div id="app" hidden>
+        <section id="setup" class="panel">
+          <div class="panel-heading">
+            <div><p class="eyebrow">KICK-OFF</p><h2>Who’s playing?</h2></div>
+            <span class="pill">3 ROUNDS EACH</span>
+          </div>
+          <form id="setup-form">
+            <div class="name-fields">
+              <label>Player one<input id="player-one" name="playerOne" value="Player 1" maxlength="24" required autocomplete="off"></label>
+              <label>Player two<input id="player-two" name="playerTwo" value="Player 2" maxlength="24" required autocomplete="off"></label>
+            </div>
+            <button class="primary" type="submit">Start a match <span aria-hidden="true">↗</span></button>
+          </form>
+        </section>
+        <section id="match" hidden>
+          <div class="match-bar">
+            <p id="round-label" class="eyebrow"></p>
+            <button id="restart" class="text-button" type="button">New match</button>
+          </div>
+          <div id="scoreboard" class="scoreboard" role="group" aria-label="Match scores"></div>
+          <section class="panel play-panel">
+            <div id="picking">
+              <div class="panel-heading">
+                <div><p class="eyebrow">01 / SECRET PICK</p><h2 id="pick-title" tabindex="-1"></h2></div>
+                <span class="pill">KEEP IT HIDDEN</span>
+              </div>
+              <p id="pick-hint" class="muted"></p>
+              <fieldset id="team-picker">
+                <legend class="sr-only">Choose one club</legend>
+                <div id="team-grid" class="team-grid"></div>
+              </fieldset>
+              <button id="lock-pick" class="primary" type="button" disabled>Lock in my club <span aria-hidden="true">→</span></button>
+            </div>
+            <div id="pick-handoff" class="handoff" hidden>
+              <span class="handoff-mark" aria-hidden="true">↔</span>
+              <p class="eyebrow">CLUB LOCKED IN</p>
+              <h2 id="pick-handoff-title" tabindex="-1"></h2>
+              <p class="muted">No peeking. Your club stays secret until both players have picked.</p>
+              <button id="pass-pick" class="primary" type="button">I’m ready to pick <span aria-hidden="true">→</span></button>
+            </div>
+            <div id="clash" class="handoff" hidden>
+              <span class="handoff-mark" aria-hidden="true">!</span>
+              <p class="eyebrow">SAME CLUB</p>
+              <h2 id="clash-title" tabindex="-1"></h2>
+              <p id="clash-hint" class="muted"></p>
+              <button id="repick" class="primary" type="button">Pick again <span aria-hidden="true">→</span></button>
+            </div>
+            <div id="reveal" hidden>
+              <p class="eyebrow">02 / THE CLUBS ARE IN</p>
+              <h2 id="reveal-title" tabindex="-1">Here’s the challenge.</h2>
+              <div id="reveal-picks" class="guess-results"></div>
+              <p class="muted">Each player guesses one footballer. 1 point for each of these clubs they played for.</p>
+              <button id="start-guessing" class="primary" type="button"></button>
+            </div>
+            <div id="guessing" hidden>
+              <p class="eyebrow">03 / FIND THE CONNECTION</p>
+              <h2 id="turn-title" tabindex="-1"></h2>
+              <div id="selected-clubs" class="club-tags"></div>
+              <form id="guess-form">
+                <label for="player-guess">Which footballer links these clubs?</label>
+                <input id="player-guess" list="player-options" required autocomplete="off" spellcheck="false" placeholder="Start typing a name, e.g. Zlatan">
+                <datalist id="player-options"></datalist>
+                <p class="muted">1 point per matching club. Your answer stays hidden until both players finish.</p>
+                <button id="submit-guess" class="primary" type="submit">Submit guess <span aria-hidden="true">→</span></button>
+              </form>
+            </div>
+            <div id="handoff" class="handoff" hidden>
+              <span class="handoff-mark" aria-hidden="true">↔</span>
+              <p class="eyebrow">ANSWER LOCKED IN</p>
+              <h2 id="handoff-title" tabindex="-1"></h2>
+              <p class="muted">No peeking. The next player gets the same clubs and a clean slate.</p>
+              <button id="pass-turn" class="primary" type="button">I’m ready to guess <span aria-hidden="true">→</span></button>
+            </div>
+            <div id="results" hidden>
+              <p id="results-eyebrow" class="eyebrow"></p>
+              <h2 id="results-title" tabindex="-1"></h2>
+              <div id="guess-results" class="guess-results"></div>
+              <div class="best-answer">
+                <p class="eyebrow">THE BEST CONNECTION</p>
+                <p id="best-answer"></p>
+              </div>
+              <button id="continue" class="primary" type="button"></button>
+            </div>
+          </section>
+        </section>
+        <section class="rules" aria-labelledby="rules-title">
+          <h2 id="rules-title">The game plan</h2>
+          <div class="rules-grid">
+            <div><span class="rule-number">01</span><h3>Pick in secret</h3><p>Each player picks one club without the other seeing. Same club? Both pick again.</p></div>
+            <div><span class="rule-number">02</span><h3>Make the link</h3><p>Take turns naming a footballer who played for as many of the two clubs as possible.</p></div>
+            <div><span class="rule-number">03</span><h3>Claim the points</h3><p>One point per matching club. Who goes first alternates. Highest total after three rounds wins.</p></div>
+          </div>
+        </section>
+      </div>
+    </main>
+    <footer><span>SMALL SQUAD. BIG CONNECTIONS.</span><span id="dataset-label">Reloading resets the match.</span></footer>
+  </body>
+</html>
